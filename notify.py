@@ -7,7 +7,7 @@ import urllib.parse
 import urllib.error
 from typing import Optional
 
-from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, REQUEST_TIMEOUT
+from config import TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS, REQUEST_TIMEOUT
 from models import Listing
 
 
@@ -17,7 +17,7 @@ def send_telegram_message(
     disable_web_page_preview: bool = False
 ) -> bool:
     """
-    Send a message via Telegram bot API.
+    Send a message via Telegram bot API to all configured chat IDs.
 
     Args:
         text: Message text (supports Markdown formatting)
@@ -25,43 +25,47 @@ def send_telegram_message(
         disable_web_page_preview: If True, don't show link previews
 
     Returns:
-        True if sent successfully, False otherwise
+        True if sent successfully to at least one recipient, False otherwise
     """
+    if not TELEGRAM_CHAT_IDS:
+        print("No Telegram chat IDs configured")
+        return False
+
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    success_count = 0
 
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": text,
-        "parse_mode": parse_mode,
-        "disable_web_page_preview": disable_web_page_preview,
-    }
+    for chat_id in TELEGRAM_CHAT_IDS:
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": parse_mode,
+            "disable_web_page_preview": disable_web_page_preview,
+        }
 
-    data = json.dumps(payload).encode("utf-8")
+        data = json.dumps(payload).encode("utf-8")
 
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+        request = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
 
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            if result.get("ok"):
-                return True
-            else:
-                print(f"Telegram API error: {result}")
-                return False
-    except urllib.error.HTTPError as e:
-        print(f"Telegram HTTP error {e.code}: {e.read().decode()}")
-        return False
-    except urllib.error.URLError as e:
-        print(f"Telegram URL error: {e.reason}")
-        return False
-    except Exception as e:
-        print(f"Telegram error: {e}")
-        return False
+        try:
+            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                if result.get("ok"):
+                    success_count += 1
+                else:
+                    print(f"Telegram API error for {chat_id}: {result}")
+        except urllib.error.HTTPError as e:
+            print(f"Telegram HTTP error {e.code} for {chat_id}: {e.read().decode()}")
+        except urllib.error.URLError as e:
+            print(f"Telegram URL error for {chat_id}: {e.reason}")
+        except Exception as e:
+            print(f"Telegram error for {chat_id}: {e}")
+
+    return success_count > 0
 
 
 def send_listing_alert(listing: Listing) -> bool:
@@ -76,7 +80,7 @@ def send_photo_with_caption(
     parse_mode: str = "Markdown"
 ) -> bool:
     """
-    Send a photo with caption via Telegram.
+    Send a photo with caption via Telegram to all configured chat IDs.
 
     Args:
         photo_url: URL of the photo to send
@@ -84,37 +88,43 @@ def send_photo_with_caption(
         parse_mode: 'Markdown' or 'HTML'
 
     Returns:
-        True if sent successfully, False otherwise
+        True if sent successfully to at least one recipient, False otherwise
     """
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "photo": photo_url,
-        "caption": caption,
-        "parse_mode": parse_mode,
-    }
-
-    data = json.dumps(payload).encode("utf-8")
-
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT) as response:
-            result = json.loads(response.read().decode("utf-8"))
-            if result.get("ok"):
-                return True
-            else:
-                print(f"Telegram API error: {result}")
-                return False
-    except Exception as e:
-        print(f"Telegram photo error: {e}")
+    if not TELEGRAM_CHAT_IDS:
+        print("No Telegram chat IDs configured")
         return False
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+    success_count = 0
+
+    for chat_id in TELEGRAM_CHAT_IDS:
+        payload = {
+            "chat_id": chat_id,
+            "photo": photo_url,
+            "caption": caption,
+            "parse_mode": parse_mode,
+        }
+
+        data = json.dumps(payload).encode("utf-8")
+
+        request = urllib.request.Request(
+            url,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+
+        try:
+            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                if result.get("ok"):
+                    success_count += 1
+                else:
+                    print(f"Telegram API error for {chat_id}: {result}")
+        except Exception as e:
+            print(f"Telegram photo error for {chat_id}: {e}")
+
+    return success_count > 0
 
 
 def send_listing_with_photo(listing: Listing) -> bool:

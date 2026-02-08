@@ -17,7 +17,9 @@ SORT_BY = "newest"
 
 # Telegram configuration (set via environment variables or GitHub Secrets)
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+# Multiple chat IDs supported - comma-separated in env var
+_chat_ids_raw = os.environ.get("TELEGRAM_CHAT_ID", "")
+TELEGRAM_CHAT_IDS = [cid.strip() for cid in _chat_ids_raw.split(",") if cid.strip()]
 
 # Polling settings
 POLL_INTERVAL_SECONDS = 300  # 5 minutes
