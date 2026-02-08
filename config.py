@@ -15,15 +15,9 @@ MIN_SQFT = 1500
 MAX_RENT = 7000
 SORT_BY = "newest"
 
-# Telegram configuration (use env vars if available, fallback to defaults)
-TELEGRAM_BOT_TOKEN = os.environ.get(
-    "TELEGRAM_BOT_TOKEN",
-    "8232057605:AAFVkzgSvyAGw-cujT9aT8P-CRdy79mxUWE"
-)
-TELEGRAM_CHAT_ID = os.environ.get(
-    "TELEGRAM_CHAT_ID",
-    "8490266898"
-)
+# Telegram configuration (set via environment variables or GitHub Secrets)
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 # Polling settings
 POLL_INTERVAL_SECONDS = 300  # 5 minutes
