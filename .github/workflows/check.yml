@@ -1,0 +1,44 @@
+name: Rental Hunter
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub UI
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Restore listings database cache
+        uses: actions/cache@v4
+        with:
+          path: listings.db
+          key: listings-db-${{ github.run_id }}
+          restore-keys: |
+            listings-db-
+
+      - name: Run rental scan
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          cd ${{ github.workspace }}
+          python main.py
+
+      - name: Save listings database cache
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: listings.db
+          key: listings-db-${{ github.run_id }}
