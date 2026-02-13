@@ -20,25 +20,26 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Restore listings database cache
-        uses: actions/cache/restore@v4
+      - name: Cache listings database
+        uses: actions/cache@v4
         with:
           path: listings.db
-          key: listings-db-${{ github.run_id }}
+          key: listings-db-${{ github.run_number }}
           restore-keys: |
             listings-db-
+          save-always: true
 
       - name: Run rental scan
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          cd ${{ github.workspace }}
-          python main.py
+        run: python main.py
 
-      - name: Save listings database cache
-        uses: actions/cache/save@v4
+      - name: Verify database exists
         if: always()
-        with:
-          path: listings.db
-          key: listings-db-${{ github.run_id }}
+        run: |
+          echo "Database file status:"
+          ls -la listings.db 2>/dev/null || echo "listings.db not found"
+          if [ -f listings.db ]; then
+            echo "Database size: $(stat -c%s listings.db 2>/dev/null || stat -f%z listings.db) bytes"
+          fi
